@@ -458,9 +458,9 @@ def check_pending_pages():
 
         remaining_seconds = record_timestamp - current_time
 
-        # ---------- ✅ 冻结期内允许“分数回升” ----------
+        # ---------- 冻结期内允许“分数回升” ----------
         if remaining_seconds < 21600:  # 6 小时
-            if score > -2:
+            if score >= -2:
                 logger.info(
                     f"页面 {page.fullname} 在冻结期内分数回升至 {score}，取消删除"
                 )
