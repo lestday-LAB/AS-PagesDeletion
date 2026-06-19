@@ -378,10 +378,10 @@ def check_original_pages():
 @Retry(ifRaise=True)
 def check_pending_pages():
     """
-    维护待删除页面状态：
-    - 分数回升 → 取消删除
-    - 跨档变化 → 更新宣告
-    - 倒计时到期 → 加入删除列表
+    维护待删除页面状态（最终稳定版）：
+    - 以 pending_pages 为唯一真相源
+    - 分数跨档才更新
+    - 倒计时最后 6 小时冻结（仅允许分数回升取消）
     """
     pages = site.pages.search(
         category="-reserve",
@@ -400,30 +400,25 @@ def check_pending_pages():
             return 0
 
     for page in pages:
-        discuss_id = get_discuss_id(page.id)
+        page_id = page.id
+
+        discuss_id = get_discuss_id(page_id)
         deletion_post = find_staff_post(get_posts(discuss_id))
         tags = page.tags
         score = page.rating
 
         if deletion_post is None:
-            edit_tags(page.id, " ".join(tags).replace("待删除", ""))
+            edit_tags(page_id, " ".join(tags).replace("待删除", ""))
             logger.warning(f"页面 {page.fullname} 未找到删除帖，移除待删除标签")
-            pending_pages.pop(page.id, None)
+            pending_pages.pop(page_id, None)
             continue
 
         source_ele = deletion_post["source_ele"]
 
-        # 人工标记分数回升
-        if "分数回升" in source_ele.text:
-            edit_tags(page.id, " ".join(tags).replace("待删除", ""))
-            logger.info(f"页面 {page.fullname} 检测到分数回升标记，取消删除")
-            pending_pages.pop(page.id, None)
-            continue
-
-        # ---- 解析 iframe 时间戳 ----
+        # ---------- iframe 时间解析 ----------
         iframe = source_ele.select_one("iframe")
         if iframe is None:
-            logger.warning(f"页面 {page.fullname} 删除帖中未找到 iframe")
+            logger.warning(f"页面 {page.fullname} 未找到 iframe")
             continue
 
         src = iframe.get("src", "")
@@ -454,50 +449,70 @@ def check_pending_pages():
             logger.warning(f"页面 {page.fullname} 无法解析倒计时时间")
             continue
 
-        # ---- 解析宣告时的原始分数 ----
-        score_match = re.search(r"目前为(-?\d+)分", source_ele.text)
-        if not score_match:
-            logger.warning(f"页面 {page.fullname} 无法解析宣告分数")
-            continue
+        # ---------- 真相源 ----------
+        if page_id in pending_pages:
+            announced_score, _, fullname = pending_pages[page_id]
+        else:
+            announced_score = score
+            pending_pages[page_id] = [score, record_timestamp, page.fullname]
 
-        announced_score = int(score_match.group(1))
+        remaining_seconds = record_timestamp - current_time
 
-        # 更新 pending_pages（始终以真实宣告为准）
-        pending_pages[page.id] = [announced_score, record_timestamp, page.fullname]
+        # ---------- ✅ 冻结期内允许“分数回升” ----------
+        if remaining_seconds < 21600:  # 6 小时
+            if score > -2:
+                logger.info(
+                    f"页面 {page.fullname} 在冻结期内分数回升至 {score}，取消删除"
+                )
+                edit_post(
+                    discuss_id,
+                    deletion_post["id"],
+                    source="【分数回升，倒计时终止】"
+                )
+                edit_tags(page_id, " ".join(tags).replace("待删除", ""))
+                pending_pages.pop(page_id, None)
+                continue
+            else:
+                logger.info(
+                    f"页面 {page.fullname} 处于冻结期（剩余 {int(remaining_seconds)}s），禁止刷新"
+                )
+                continue
 
-        # ---- 分数回升 ----
+        # ---------- 正常分数回升（非冻结期） ----------
         if score > -2:
             edit_post(
                 discuss_id,
                 deletion_post["id"],
                 source="【分数回升，倒计时停止】"
             )
-            pending_pages.pop(page.id, None)
-            edit_tags(page.id, " ".join(tags).replace("待删除", ""))
+            pending_pages.pop(page_id, None)
+            edit_tags(page_id, " ".join(tags).replace("待删除", ""))
             logger.info(f"页面 {page.fullname} 分数回升至 {score}，取消删除")
             continue
 
-        # ---- 判断是否真的需要更新宣告 ----
+        # ---------- 跨档更新 ----------
         old_bucket = score_bucket(announced_score)
         new_bucket = score_bucket(score)
 
         if old_bucket != new_bucket and new_bucket > 0:
             new_timestamp = current_time + new_bucket * 3600
-            logger.info(
-                f"页面 {page.fullname} 宣告分数变化 "
-                f"({announced_score} → {score})，更新为 {new_bucket}h 删除宣告"
-            )
+            time_diff = abs(record_timestamp - new_timestamp)
 
-            new_source = build_delete_announce(score, new_timestamp)
-            edit_post(discuss_id, deletion_post["id"], source=new_source)
-            pending_pages[page.id] = [score, new_timestamp, page.fullname]
-            record_timestamp = new_timestamp
+            if time_diff > 300:
+                logger.info(
+                    f"页面 {page.fullname} 跨档更新 "
+                    f"({announced_score} → {score})，新倒计时 {new_bucket}h"
+                )
+                new_source = build_delete_announce(score, new_timestamp)
+                edit_post(discuss_id, deletion_post["id"], source=new_source)
+                pending_pages[page_id] = [score, new_timestamp, page.fullname]
+                record_timestamp = new_timestamp
         else:
             logger.debug(
                 f"页面 {page.fullname} 分数未跨档 ({score})，不更新宣告"
             )
 
-        # ---- 倒计时到期 ----
+        # ---------- 到期 ----------
         if current_time >= record_timestamp:
             logger.info(f"页面 {page.fullname} 倒计时到期，加入删除宣告列表")
             pending_check_pages.append(
