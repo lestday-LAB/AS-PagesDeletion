@@ -525,7 +525,7 @@ def check_deleted_pages():
     """将已删除分类的页面加入宣告列表"""
     pages = site.pages.search(
         category="deleted",
-        tags="-已归档 -重写中"
+        tags="-已归档 -重写中 -管理"
     )
 
     for page in pages:
