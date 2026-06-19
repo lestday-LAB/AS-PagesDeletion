@@ -37,7 +37,7 @@ jobs:
           fi
 
       - name: Execute script
-        run: python bkr_delete.py
+        run: python pages_delete.py
 
       - name: Commit and push changes
         run: |
