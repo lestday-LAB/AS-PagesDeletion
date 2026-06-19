@@ -5,6 +5,10 @@ on:
     - cron: '*/30 * * * *'    
   workflow_dispatch:
 
+
+env:
+    TZ: Asia/Shanghai
+
 jobs:
   run-manager:
     runs-on: ubuntu-latest
