@@ -324,10 +324,10 @@ def find_staff_post(posts: list[dict]) -> dict:
 
 def get_delete_hours(score: int) -> int:
     """根据分数决定删除倒计时小时数"""
-    if score <= -2:
-        return 48
-    elif score <= -4:
+    if score <= -4:
         return 24
+    elif score <= -2:
+        return 48
     else:
         return 0
 
