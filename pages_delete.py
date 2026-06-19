@@ -514,7 +514,6 @@ def check_pending_pages():
                     "time": round(remaining_hours, 1),
                     "discuss_link": f"https://{config['siteUnixName']}.wikidot.com/forum/t-{discuss_id}",
                     "post_id": deletion_post["id"],
-                    "isOriginal": True,
                     "timestamp": record_timestamp,
                 }
             )
