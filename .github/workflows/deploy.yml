@@ -1,12 +1,16 @@
-name: Build and deploy to gh-pages
+name: Deploy web to gh-pages
 
 on:
   workflow_dispatch:
   push:
     paths:
       - 'web/**'
+      - 'data.json'
     branches:
       - master
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -16,10 +20,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy web/ to gh-pages
+      - name: Copy data.json into web/
+        run: |
+          cp data.json web/data.json
+
+      - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./web
           publish_branch: gh-pages
-          commit_message: "Deploy web/ to gh-pages"
+          commit_message: "Deploy web/ and data.json to gh-pages"
+          force_orphan: true
