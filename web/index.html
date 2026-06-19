@@ -165,7 +165,7 @@
           </button>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto scrollbar-thin">
           <table class="min-w-[600px] w-full text-sm">
             <thead class="bg-slate-700/50 text-slate-400 uppercase">
               <tr>
@@ -175,9 +175,14 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
-              <tr v-if="currentList.length === 0">
+              <tr v-if="currentList.length === 0 && !search">
                 <td colspan="3" class="px-6 py-10 text-center text-slate-500">
                   📭 没有符合条件的页面
+                </td>
+              </tr>
+              <tr v-else-if="currentList.length === 0 && search">
+                <td colspan="3" class="px-6 py-10 text-center text-slate-500">
+                  🔍 未找到匹配的页面
                 </td>
               </tr>
               <tr v-for="page in currentList" :key="page.link" class="hover:bg-slate-700/30">
@@ -234,25 +239,50 @@
         const activeTab = ref('pre');
         const loading = ref(false);
 
+        const PRIMARY_URL = 'https://raw.githubusercontent.com/DeepForestClub/PagesDeletion/master/data.json';
+        const FALLBACK_URL = 'https://dfcwiki.pages.dev/json/pages-deletion-data.json';
+
+        function fetchWithTimeout(url, timeout = 8000) {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), timeout);
+          return fetch(url + '?t=' + Date.now(), { signal: controller.signal })
+            .finally(() => clearTimeout(timer));
+        }
+
         async function refreshData() {
           loading.value = true;
+          let source = 'primary';
+
           try {
-            const res = await fetch(
-              'https://raw.githubusercontent.com/DeepForestClub/PagesDeletion/master/data.json?t=' + Date.now()
-            );
-            const json = await res.json();
-            data.value = {
-              pre_delete_pages: json.pre_delete_pages || [],
-              expired_pages: json.expired_pages || [],
-              deleted_pages: json.deleted_pages || [],
-              errors: json.errors || [],
-              update_timestamp: json.update_timestamp || 0
-            };
-          } catch {
-            data.value.errors.push('数据加载失败');
-          } finally {
-            loading.value = false;
+            const res = await fetchWithTimeout(PRIMARY_URL);
+            if (!res.ok) throw new Error('Primary source returned ' + res.status);
+            var json = await res.json();
+          } catch (primaryErr) {
+            source = 'fallback';
+            try {
+              const res2 = await fetchWithTimeout(FALLBACK_URL);
+              if (!res2.ok) throw new Error('Fallback source returned ' + res2.status);
+              json = await res2.json();
+            } catch (fallbackErr) {
+              data.value.errors = ['数据加载失败：主源与备用源均无法访问'];
+              loading.value = false;
+              return;
+            }
           }
+
+          data.value = {
+            pre_delete_pages: json.pre_delete_pages || [],
+            expired_pages: json.expired_pages || [],
+            deleted_pages: json.deleted_pages || [],
+            errors: json.errors || [],
+            update_timestamp: json.update_timestamp || 0
+          };
+
+          if (source === 'fallback' && !data.value.errors.includes('⚠️ 当前使用备用数据源')) {
+            data.value.errors.push('⚠️ 主数据源不可用，当前使用备用数据源');
+          }
+
+          loading.value = false;
         }
 
         const currentList = computed(() => {
