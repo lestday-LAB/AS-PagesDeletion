@@ -377,13 +377,27 @@ def check_original_pages():
 
 @Retry(ifRaise=True)
 def check_pending_pages():
-    """维护待删除页面状态：倒计时到期、分数回升、分数变化更新宣告"""
+    """
+    维护待删除页面状态：
+    - 分数回升 → 取消删除
+    - 跨档变化 → 更新宣告
+    - 倒计时到期 → 加入删除列表
+    """
     pages = site.pages.search(
         category="-reserve",
         tags="+待删除"
     )
 
     current_time = time.time()
+
+    def score_bucket(score: int) -> int:
+        """返回分数对应的倒计时档位（小时）"""
+        if score <= -4:
+            return 24
+        elif score <= -2:
+            return 48
+        else:
+            return 0
 
     for page in pages:
         discuss_id = get_discuss_id(page.id)
@@ -394,129 +408,113 @@ def check_pending_pages():
         if deletion_post is None:
             edit_tags(page.id, " ".join(tags).replace("待删除", ""))
             logger.warning(f"页面 {page.fullname} 未找到删除帖，移除待删除标签")
-            if page.id in pending_pages:
-                del pending_pages[page.id]
+            pending_pages.pop(page.id, None)
             continue
 
         source_ele = deletion_post["source_ele"]
 
-        # 检测"分数回升"标记
+        # 人工标记分数回升
         if "分数回升" in source_ele.text:
             edit_tags(page.id, " ".join(tags).replace("待删除", ""))
             logger.info(f"页面 {page.fullname} 检测到分数回升标记，取消删除")
-            if page.id in pending_pages:
-                del pending_pages[page.id]
+            pending_pages.pop(page.id, None)
             continue
 
-        # 从 iframe 中提取时间戳
+        # ---- 解析 iframe 时间戳 ----
         iframe = source_ele.select_one("iframe")
         if iframe is None:
             logger.warning(f"页面 {page.fullname} 删除帖中未找到 iframe")
             continue
 
         src = iframe.get("src", "")
-        # 支持新旧两种计时器域名
+        record_timestamp = None
+
         if "timerdfc.pages.dev" in src:
-            match = re.search(r"time=([^&]+)", src)
-            if match:
-                time_str = match.group(1)
-                # 处理 URL 编码
-                time_str = time_str.replace("%3A", ":")
-                try:
-                    if "T" in time_str and "Z" in time_str:
-                        record_timestamp = datetime.fromisoformat(time_str.replace("Z", "+00:00")).timestamp()
-                    else:
-                        record_timestamp = float(time_str) / 1000
-                except ValueError:
-                    logger.warning(f"页面 {page.fullname} 时间戳解析失败: {time_str}")
-                    continue
-            else:
-                logger.warning(f"页面 {page.fullname} 未找到时间参数")
-                continue
+            m = re.search(r"time=([^&]+)", src)
+            if m:
+                t = m.group(1).replace("%3A", ":").replace("Z", "+00:00")
+                record_timestamp = datetime.fromisoformat(t).timestamp()
+
         elif "arandintday.github.io" in src:
-            match = re.search(r"timestamp=(\d+)", src)
-            if match:
-                record_timestamp = float(match.group(1)) / 1000
-            else:
-                logger.warning(f"页面 {page.fullname} 未找到时间戳")
-                continue
+            m = re.search(r"timestamp=(\d+)", src)
+            if m:
+                record_timestamp = float(m.group(1)) / 1000
+
         elif "timer.backroomswiki.cn" in src:
             if ".000Z" in src:
-                match = re.search(r"/time=(.*?)\.000Z", src)
-                if match:
-                    record_timestamp = datetime.fromisoformat(match.group(1)).timestamp()
-                else:
-                    logger.warning(f"页面 {page.fullname} 未找到时间戳")
-                    continue
+                m = re.search(r"/time=(.*?)\.000Z", src)
+                if m:
+                    record_timestamp = datetime.fromisoformat(m.group(1)).timestamp()
             else:
-                match = re.search(r"/time=(\d+)", src)
-                if match:
-                    record_timestamp = float(match.group(1)) / 1000
-                else:
-                    logger.warning(f"页面 {page.fullname} 未找到时间戳")
-                    continue
-        else:
-            logger.warning(f"页面 {page.fullname} 未知的计时器域名")
+                m = re.search(r"/time=(\d+)", src)
+                if m:
+                    record_timestamp = float(m.group(1)) / 1000
+
+        if record_timestamp is None:
+            logger.warning(f"页面 {page.fullname} 无法解析倒计时时间")
             continue
 
-        logger.info(f"页面 {page.fullname} 删除宣告时间戳为 {record_timestamp}")
-
-        # 从宣告内容中提取原始分数
+        # ---- 解析宣告时的原始分数 ----
         score_match = re.search(r"目前为(-?\d+)分", source_ele.text)
-        if score_match:
-            original_announced_score = int(score_match.group(1))
-        else:
-            original_announced_score = score
+        if not score_match:
+            logger.warning(f"页面 {page.fullname} 无法解析宣告分数")
+            continue
 
-        # 更新 pending 信息
-        pending_pages[page.id] = [original_announced_score, record_timestamp, page.fullname]
+        announced_score = int(score_match.group(1))
 
-        # 分数回升检查：分数 > -2 → 取消删除
+        # 更新 pending_pages（始终以真实宣告为准）
+        pending_pages[page.id] = [announced_score, record_timestamp, page.fullname]
+
+        # ---- 分数回升 ----
         if score > -2:
             edit_post(
                 discuss_id,
                 deletion_post["id"],
                 source="【分数回升，倒计时停止】"
             )
-            del pending_pages[page.id]
+            pending_pages.pop(page.id, None)
             edit_tags(page.id, " ".join(tags).replace("待删除", ""))
-            logger.info(f'页面 {page.fullname} 分数回升至 {score}，取消删除')
+            logger.info(f"页面 {page.fullname} 分数回升至 {score}，取消删除")
             continue
 
-        # 分数变化 → 更新宣告的倒计时时长
-        new_hours = get_delete_hours(score)
-        expected_timestamp = current_time + new_hours * 3600
+        # ---- 判断是否真的需要更新宣告 ----
+        old_bucket = score_bucket(announced_score)
+        new_bucket = score_bucket(score)
 
-        # 如果分数对应的倒计时与当前宣告不一致，更新宣告
-        time_diff = abs(record_timestamp - expected_timestamp)
-        if new_hours > 0 and time_diff > 300:  # 超过5分钟差异才更新
-            logger.info(f'页面 {page.fullname} 分数变为 {score}，更新删除宣告为 {new_hours} 小时')
-            new_source = build_delete_announce(score, expected_timestamp)
+        if old_bucket != new_bucket and new_bucket > 0:
+            new_timestamp = current_time + new_bucket * 3600
+            logger.info(
+                f"页面 {page.fullname} 宣告分数变化 "
+                f"({announced_score} → {score})，更新为 {new_bucket}h 删除宣告"
+            )
+
+            new_source = build_delete_announce(score, new_timestamp)
             edit_post(discuss_id, deletion_post["id"], source=new_source)
-            pending_pages[page.id] = [score, expected_timestamp, page.fullname]
-            record_timestamp = expected_timestamp
+            pending_pages[page.id] = [score, new_timestamp, page.fullname]
+            record_timestamp = new_timestamp
+        else:
+            logger.debug(
+                f"页面 {page.fullname} 分数未跨档 ({score})，不更新宣告"
+            )
 
-        # 倒计时到期检查
+        # ---- 倒计时到期 ----
         if current_time >= record_timestamp:
-            logger.info(f'页面 {page.fullname} 倒计时到期，加入删除宣告列表')
+            logger.info(f"页面 {page.fullname} 倒计时到期，加入删除宣告列表")
             pending_check_pages.append(
-                [page.fullname, original_announced_score, "normal"]
+                [page.fullname, announced_score, "normal"]
             )
         else:
-            # 未到期，加入等待列表
             remaining_hours = (record_timestamp - current_time) / 3600
-            pending_delete_pages.append(
-                {
-                    "link": page.get_url(),
-                    "title": page.title,
-                    "score": score,
-                    "release_score": original_announced_score,
-                    "time": round(remaining_hours, 1),
-                    "discuss_link": f"https://{config['siteUnixName']}.wikidot.com/forum/t-{discuss_id}",
-                    "post_id": deletion_post["id"],
-                    "timestamp": record_timestamp,
-                }
-            )
+            pending_delete_pages.append({
+                "link": page.get_url(),
+                "title": page.title,
+                "score": score,
+                "release_score": announced_score,
+                "time": round(remaining_hours, 1),
+                "discuss_link": f"https://{config['siteUnixName']}.wikidot.com/forum/t-{discuss_id}",
+                "post_id": deletion_post["id"],
+                "timestamp": record_timestamp,
+            })
 
 
 @Retry(ifRaise=True)
