@@ -338,7 +338,7 @@ def check_original_pages():
     pages = site.pages.search(
         category="-reserve",
         tags="-已归档 -管理 -作者 -待删除 -重写中 -_低分删除豁免 原创 文章 _test -组件后端 -组件 -版式",
-        rating="<=4"
+        rating="<=0"
     )
 
     current_time = time.time()
