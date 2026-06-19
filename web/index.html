@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PagesDeletion 数据看板</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --accent: #38bdf8;
+      --accent2: #34d399;
+      --accent3: #fb923c;
+      --accent4: #f472b6;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --danger: #f87171;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .header h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .header p { color: var(--muted); font-size: 14px; }
+    .header a { color: var(--accent); text-decoration: none; }
+    .header a:hover { text-decoration: underline; }
+
+    /* Stats cards */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+    .stat-card .icon { font-size: 28px; margin-bottom: 8px; }
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-card .label { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .stat-card.green .value  { color: var(--accent2); }
+    .stat-card.orange .value { color: var(--accent3); }
+    .stat-card.pink .value   { color: var(--accent4); }
+    .stat-card.red .value    { color: var(--danger); }
+
+    /* Section title */
+    .section-title {
+      font-size: 18px;
+      margin: 24px 0 12px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+      color: var(--text);
+    }
+
+    /* Table */
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      background: rgba(56, 189, 248, .08);
+      color: var(--accent);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 12px 16px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+    tbody tr:hover { background: rgba(56, 189, 248, .04); }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.score-neg { background: rgba(248, 113, 113, .15); color: var(--danger); }
+    .badge.score-zero { background: rgba(148, 163, 184, .15); color: var(--muted); }
+
+    a.link { color: var(--accent); text-decoration: none; word-break: break-all; }
+    a.link:hover { text-decoration: underline; }
+
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Errors */
+    .error-item {
+      background: rgba(248, 113, 113, .06);
+      border: 1px solid rgba(248, 113, 113, .2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--danger);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 36px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .header h1 { font-size: 22px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      table { font-size: 12px; }
+      thead th, tbody td { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🗑️ PagesDeletion 数据看板</h1>
+  <p>自动检查符合删除策略的页面 · 数据来源：<a href="https://github.com/DeepForestClub/PagesDeletion" target="_blank">DeepForestClub/PagesDeletion</a></p>
+  <p id="updateTime" style="margin-top:4px"></p>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="icon">📋</div>
+    <div class="value" id="statPre">0</div>
+    <div class="label">待删除页面</div>
+  </div>
+  <div class="stat-card green">
+    <div class="icon">✅</div>
+    <div class="value" id="statDeleted">0</div>
+    <div class="label">已删除页面</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="icon">⚠️</div>
+    <div class="value" id="statErrors">0</div>
+    <div class="label">错误记录</div>
+  </div>
+  <div class="stat-card pink">
+    <div class="icon">📊</div>
+    <div class="value" id="statAvgScore">—</div>
+    <div class="label">平均评分</div>
+  </div>
+</div>
+
+<!-- Pre-delete pages -->
+<h2 class="section-title">待删除页面（pre_delete_pages）</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>页面标题</th>
+        <th>链接</th>
+        <th>评分</th>
+        <th>发布评分</th>
+        <th>剩余时间(小时)</th>
+        <th>讨论帖</th>
+        <th>最后更新</th>
+      </tr>
+    </thead>
+    <tbody id="preTableBody"></tbody>
+  </table>
+  <div class="empty" id="preEmpty" style="display:none">暂无待删除页面</div>
+</div>
+
+<!-- Deleted pages -->
+<h2 class="section-title">已删除页面（deleted_pages）</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>页面标题</th>
+        <th>链接</th>
+        <th>评分</th>
+        <th>发布评分</th>
+        <th>删除时间</th>
+      </tr>
+    </thead>
+    <tbody id="delTableBody"></tbody>
+  </table>
+  <div class="empty" id="delEmpty" style="display:none">暂无已删除页面</div>
+</div>
+
+<!-- Errors -->
+<h2 class="section-title">错误记录（errors）</h2>
+<div id="errorsContainer">
+  <div class="empty" id="errEmpty">暂无错误记录</div>
+</div>
+
+<div class="footer">
+  Built with ❤️ · 数据自动同步自 GitHub 仓库 · <span id="nowTime"></span>
+</div>
+
+<script>
+// ========== 在这里粘贴 data.json 的内容 ==========
+const DATA = {
+  "pre_delete_pages": [
+    {
+      "link": "https://deep-forest-club.wikidot.com/deltest",
+      "title": "删除测试",
+      "score": -4,
+      "release_score": -4,
+      "time": 48,
+      "discuss_link": "https://deep-forest-club.wikidot.com/forum/t-18033207",
+      "post_id": 8295276,
+      "timestamp": 1782025770
+    }
+  ],
+  "deleted_pages": [],
+  "errors": [],
+  "update_timestamp": 1781852972.3732786
+};
+// ================================================
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  return d.toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function render() {
+  const { pre_delete_pages, deleted_pages, errors, update_timestamp } = DATA;
+
+  // Update time
+  document.getElementById('updateTime').textContent =
+    '数据更新时间：' + fmtTime(update_timestamp);
+
+  // Stats
+  document.getElementById('statPre').textContent = pre_delete_pages.length;
+  document.getElementById('statDeleted').textContent = deleted_pages.length;
+  document.getElementById('statErrors').textContent = errors.length;
+
+  if (pre_delete_pages.length) {
+    const avg = pre_delete_pages.reduce((s, p) => s + p.score, 0) / pre_delete_pages.length;
+    document.getElementById('statAvgScore').textContent = avg.toFixed(1);
+  } else {
+    document.getElementById('statAvgScore').textContent = '—';
+  }
+
+  // Pre-delete table
+  const preBody = document.getElementById('preTableBody');
+  if (pre_delete_pages.length === 0) {
+    document.getElementById('preEmpty').style.display = 'block';
+  } else {
+    pre_delete_pages.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      const scoreBadge = p.score < 0
+        ? `<span class="badge score-neg">${p.score}</span>`
+        : `<span class="badge score-zero">${p.score}</span>`;
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${p.title || '—'}</td>
+        <td><a class="link" href="${p.link}" target="_blank">${p.link}</a></td>
+        <td>${scoreBadge}</td>
+        <td>${p.release_score ?? '—'}</td>
+        <td>${p.time ?? '—'}</td>
+        <td>${p.discuss_link ? `<a class="link" href="${p.discuss_link}" target="_blank">讨论帖</a>` : '—'}</td>
+        <td>${fmtTime(p.timestamp)}</td>
+      `;
+      preBody.appendChild(tr);
+    });
+  }
+
+  // Deleted table
+  const delBody = document.getElementById('delTableBody');
+  if (deleted_pages.length === 0) {
+    document.getElementById('delEmpty').style.display = 'block';
+  } else {
+    deleted_pages.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${p.title || '—'}</td>
+        <td><a class="link" href="${p.link}" target="_blank">${p.link}</a></td>
+        <td>${p.score ?? '—'}</td>
+        <td>${p.release_score ?? '—'}</td>
+        <td>${fmtTime(p.timestamp || p.deleted_at)}</td>
+      `;
+      delBody.appendChild(tr);
+    });
+  }
+
+  // Errors
+  const errContainer = document.getElementById('errorsContainer');
+  if (errors.length === 0) {
+    document.getElementById('errEmpty').style.display = 'block';
+  } else {
+    errors.forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'error-item';
+      div.textContent = typeof e === 'string' ? e : JSON.stringify(e);
+      errContainer.appendChild(div);
+    });
+  }
+
+  // Now
+  document.getElementById('nowTime').textContent =
+    '当前时间：' + new Date().toLocaleString('zh-CN');
+}
+
+render();
+</script>
+</body>
+</html>
