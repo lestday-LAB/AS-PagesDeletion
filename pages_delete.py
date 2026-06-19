@@ -334,10 +334,10 @@ def get_delete_hours(score: int) -> int:
 
 @Retry(ifRaise=True)
 def check_original_pages():
-    """检查原创页面，根据评分发布删除宣告"""
+    """检查文章页面，根据评分发布删除宣告"""
     pages = site.pages.search(
-        category="-reserve",
-        tags="-已归档 -管理 -作者 -待删除 -重写中 -_低分删除豁免 原创 文章 _test -组件后端 -组件 -版式",
+        category="-archived -setting -space -system -topic",
+        tags="-已归档 -管理 -作者 -待删除 -重写中 -_低分删除豁免 原创 搬运 文章 设定框架 _test -组件后端 -组件 -版式",
         rating="<=0"
     )
 
@@ -577,7 +577,7 @@ def main():
     js_result = []
     pending_check_pages = []
     pending_delete_pages = []
-    logger.info('开始检查原创页面并发布删除宣告')
+    logger.info('开始检查文章页面并发布删除宣告')
     check_original_pages()
     logger.info('开始更新待删除文章信息')
     check_pending_pages()
