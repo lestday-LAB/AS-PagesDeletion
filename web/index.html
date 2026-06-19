@@ -1,355 +1,316 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PagesDeletion 数据看板</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PagesDeletion 数据看板 - 深林文学部</title>
+  <link rel="shortcut icon" href="./public/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { danger: '#ef4444', warn: '#f59e0b', ok: '#22c55e' } } }
+    }
+  </script>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --accent: #38bdf8;
-      --accent2: #34d399;
-      --accent3: #fb923c;
-      --accent4: #f472b6;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --danger: #f87171;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px;
-    }
-    /* Header */
-    .header {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .header h1 {
-      font-size: 28px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-    .header p { color: var(--muted); font-size: 14px; }
-    .header a { color: var(--accent); text-decoration: none; }
-    .header a:hover { text-decoration: underline; }
-
-    /* Stats cards */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 36px;
-    }
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      text-align: center;
-      transition: transform .2s, box-shadow .2s;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,.4);
-    }
-    .stat-card .icon { font-size: 28px; margin-bottom: 8px; }
-    .stat-card .value {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-    .stat-card .label { color: var(--muted); font-size: 13px; margin-top: 4px; }
-    .stat-card.green .value  { color: var(--accent2); }
-    .stat-card.orange .value { color: var(--accent3); }
-    .stat-card.pink .value   { color: var(--accent4); }
-    .stat-card.red .value    { color: var(--danger); }
-
-    /* Section title */
-    .section-title {
-      font-size: 18px;
-      margin: 24px 0 12px;
-      padding-left: 12px;
-      border-left: 3px solid var(--accent);
-      color: var(--text);
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, sans-serif;
     }
 
-    /* Table */
-    .table-wrap {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 24px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    thead th {
-      background: rgba(56, 189, 248, .08);
-      color: var(--accent);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      padding: 12px 16px;
-      text-align: left;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    tbody td {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      font-size: 14px;
-      color: var(--text);
-    }
-    tbody tr:hover { background: rgba(56, 189, 248, .04); }
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .badge.score-neg { background: rgba(248, 113, 113, .15); color: var(--danger); }
-    .badge.score-zero { background: rgba(148, 163, 184, .15); color: var(--muted); }
-
-    a.link { color: var(--accent); text-decoration: none; word-break: break-all; }
-    a.link:hover { text-decoration: underline; }
-
-    .empty {
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
-      font-size: 14px;
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
 
-    /* Errors */
-    .error-item {
-      background: rgba(248, 113, 113, .06);
-      border: 1px solid rgba(248, 113, 113, .2);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 8px;
-      font-size: 13px;
-      color: var(--danger);
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
     }
 
-    /* Footer */
-    .footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 36px;
+    .spin {
+      animation: spin 1s linear infinite;
     }
 
-    /* Responsive */
-    @media (max-width: 600px) {
-      body { padding: 12px; }
-      .header h1 { font-size: 22px; }
-      .stats { grid-template-columns: 1fr 1fr; }
-      table { font-size: 12px; }
-      thead th, tbody td { padding: 8px 10px; }
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
-<body>
 
-<div class="header">
-  <h1>🗑️ PagesDeletion 数据看板</h1>
-  <p>自动检查符合删除策略的页面 · 数据来源：<a href="https://github.com/DeepForestClub/PagesDeletion" target="_blank">DeepForestClub/PagesDeletion</a></p>
-  <p id="updateTime" style="margin-top:4px"></p>
-</div>
+<body class="min-h-screen">
+  <div id="app">
 
-<div class="stats">
-  <div class="stat-card">
-    <div class="icon">📋</div>
-    <div class="value" id="statPre">0</div>
-    <div class="label">待删除页面</div>
+    <!-- Nav -->
+    <nav class="bg-slate-900 border-b border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+      <div class="flex items-center gap-3">
+        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+        <div>
+          <h1 class="text-xl font-bold text-white leading-tight">PagesDeletion</h1>
+          <p class="text-xs text-slate-400">页面自动清删系统 · 实时看板</p>
+        </div>
+      </div>
+      <div class="text-xs text-slate-500">
+        数据更新：{{ formatTime(data.update_timestamp) }}
+      </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+
+      <!-- Stat Cards -->
+      <section class="grid grid-cols-2 min-[840px]:grid-cols-4 gap-4">
+
+        <!-- 待删除 -->
+        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+            <span class="text-xl text-yellow-400">
+              <i class="fa-solid fa-hourglass"></i>
+            </span>
+          </div>
+          <div>
+            <p class="text-sm text-slate-400">待删除</p>
+            <p class="text-2xl font-bold text-yellow-400">{{ data.pre_delete_pages.length }}</p>
+          </div>
+        </div>
+
+        <!-- 可删除 -->
+        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+            <span class="text-xl text-red-400">
+              <i class="fa-regular fa-alarm-clock"></i>
+            </span>
+          </div>
+          <div>
+            <p class="text-sm text-slate-400">可删除</p>
+            <p class="text-2xl font-bold text-red-400">{{ data.expired_pages?.length || 0 }}</p>
+          </div>
+        </div>
+
+        <!-- 错误 -->
+        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+            <span class="text-xl text-orange-400">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </span>
+          </div>
+          <div>
+            <p class="text-sm text-slate-400">错误数</p>
+            <p class="text-2xl font-bold text-orange-400">{{ data.errors.length }}</p>
+          </div>
+        </div>
+
+        <!-- 平均分 -->
+        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <span class="text-xl text-blue-400">
+              <i class="fa-regular fa-chart-bar"></i>
+            </span>
+          </div>
+          <div>
+            <p class="text-sm text-slate-400">平均分</p>
+            <p class="text-2xl font-bold text-blue-400">{{ avgScore }}</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Toolbar -->
+      <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 flex flex-wrap gap-3 items-center">
+        <input v-model="search" type="text" placeholder="搜索页面标题..."
+          class="flex-1 min-w-[200px] px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400" />
+        <select v-model="sortBy" class="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+          <option value="score">按评分排序</option>
+          <option value="time">按宽限时长排序</option>
+        </select>
+        <button @click="refreshData" :disabled="loading"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg flex items-center gap-2">
+          <svg class="w-4 h-4" :class="{ spin: loading }" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24">
+            <path d="M1 4v6h6M23 20v-6h-6" />
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+          </svg>
+          {{ loading ? '刷新中...' : '刷新' }}
+        </button>
+      </section>
+
+      <!-- Tabs + Table -->
+      <section class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+        <div class="flex border-b border-slate-700">
+          <button @click="activeTab = 'pre'"
+            :class="activeTab === 'pre' ? 'border-b-2 border-yellow-400 text-yellow-400' : 'text-slate-400 hover:text-white'"
+            class="px-6 py-3 text-sm font-medium transition">
+            <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2 align-middle"></span>
+            待删除（{{ data.pre_delete_pages.length }}）
+          </button>
+          <button @click="activeTab = 'expired'"
+            :class="activeTab === 'expired' ? 'border-b-2 border-red-400 text-red-400' : 'text-slate-400 hover:text-white'"
+            class="px-6 py-3 text-sm font-medium transition">
+            <span class="inline-block w-2 h-2 rounded-full bg-red-400 mr-2 align-middle"></span>
+            可删除{{ data.expired_pages?.length || 0 }}）
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-[600px] w-full text-sm">
+            <thead class="bg-slate-700/50 text-slate-400 uppercase">
+              <tr>
+                <th class="px-6 py-3 text-left">标题</th>
+                <th class="px-6 py-3 text-left">评分</th>
+                <th class="px-6 py-3 text-left">宽限时长</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+              <tr v-if="currentList.length === 0">
+                <td colspan="3" class="px-6 py-10 text-center text-slate-500">
+                  📭 没有符合条件的页面
+                </td>
+              </tr>
+              <tr v-for="page in currentList" :key="page.link" class="hover:bg-slate-700/30">
+                <td class="px-6 py-4 text-white">
+                  <a :href="page.link" target="_blank" class="hover:text-blue-400 transition">
+                    {{ page.title }}
+                  </a>
+                </td>
+                <td class="px-6 py-4">
+                  <span :class="page.score < 0
+                      ? 'bg-red-500/20 text-red-400'
+                      : 'bg-green-500/20 text-green-400'" class="px-2 py-1 rounded-full text-xs font-bold">
+                    {{ page.score }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-slate-300" :class="page.time < 12 ? 'text-red-400 font-semibold' : ''">
+                  {{ formatDuration(page.time) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Errors panel -->
+      <details v-if="data.errors.length" class="bg-slate-800 border border-slate-700 rounded-2xl p-4">
+        <summary class="cursor-pointer text-yellow-400 font-medium">查看错误（{{ data.errors.length }}）</summary>
+        <ul class="mt-3 space-y-1 text-sm text-slate-400">
+          <li v-for="(e, i) in data.errors" :key="i" class="flex items-start gap-2">
+            <span class="text-red-400 mt-0.5">•</span>
+            <span>{{ e }}</span>
+          </li>
+        </ul>
+      </details>
+
+    </div>
   </div>
-  <div class="stat-card green">
-    <div class="icon">✅</div>
-    <div class="value" id="statDeleted">0</div>
-    <div class="label">已删除页面</div>
-  </div>
-  <div class="stat-card orange">
-    <div class="icon">⚠️</div>
-    <div class="value" id="statErrors">0</div>
-    <div class="label">错误记录</div>
-  </div>
-  <div class="stat-card pink">
-    <div class="icon">📊</div>
-    <div class="value" id="statAvgScore">—</div>
-    <div class="label">平均评分</div>
-  </div>
-</div>
 
-<!-- Pre-delete pages -->
-<h2 class="section-title">待删除页面（pre_delete_pages）</h2>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>页面标题</th>
-        <th>链接</th>
-        <th>评分</th>
-        <th>发布评分</th>
-        <th>剩余时间(小时)</th>
-        <th>讨论帖</th>
-        <th>最后更新</th>
-      </tr>
-    </thead>
-    <tbody id="preTableBody"></tbody>
-  </table>
-  <div class="empty" id="preEmpty" style="display:none">暂无待删除页面</div>
-</div>
+  <script>
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
-<!-- Deleted pages -->
-<h2 class="section-title">已删除页面（deleted_pages）</h2>
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>页面标题</th>
-        <th>链接</th>
-        <th>评分</th>
-        <th>发布评分</th>
-        <th>删除时间</th>
-      </tr>
-    </thead>
-    <tbody id="delTableBody"></tbody>
-  </table>
-  <div class="empty" id="delEmpty" style="display:none">暂无已删除页面</div>
-</div>
+    createApp({
+      setup() {
+        const data = ref({
+          pre_delete_pages: [],
+          expired_pages: [],
+          deleted_pages: [],
+          errors: [],
+          update_timestamp: 0
+        });
 
-<!-- Errors -->
-<h2 class="section-title">错误记录（errors）</h2>
-<div id="errorsContainer">
-  <div class="empty" id="errEmpty">暂无错误记录</div>
-</div>
+        const search = ref('');
+        const sortBy = ref('score');
+        const activeTab = ref('pre');
+        const loading = ref(false);
 
-<div class="footer">
-  Built with ❤️ · 数据自动同步自 GitHub 仓库 · <span id="nowTime"></span>
-</div>
+        async function refreshData() {
+          loading.value = true;
+          try {
+            const res = await fetch(
+              'https://raw.githubusercontent.com/DeepForestClub/PagesDeletion/master/data.json?t=' + Date.now()
+            );
+            const json = await res.json();
+            data.value = {
+              pre_delete_pages: json.pre_delete_pages || [],
+              expired_pages: json.expired_pages || [],
+              deleted_pages: json.deleted_pages || [],
+              errors: json.errors || [],
+              update_timestamp: json.update_timestamp || 0
+            };
+          } catch {
+            data.value.errors.push('数据加载失败');
+          } finally {
+            loading.value = false;
+          }
+        }
 
-<script>
-// ========== 在这里粘贴 data.json 的内容 ==========
-const DATA = {
-  "pre_delete_pages": [
-    {
-      "link": "https://deep-forest-club.wikidot.com/deltest",
-      "title": "删除测试",
-      "score": -4,
-      "release_score": -4,
-      "time": 48,
-      "discuss_link": "https://deep-forest-club.wikidot.com/forum/t-18033207",
-      "post_id": 8295276,
-      "timestamp": 1782025770
-    }
-  ],
-  "deleted_pages": [],
-  "errors": [],
-  "update_timestamp": 1781852972.3732786
-};
-// ================================================
+        const currentList = computed(() => {
+          let pages = activeTab.value === 'pre'
+            ? [...data.value.pre_delete_pages]
+            : [...(data.value.expired_pages || [])];
 
-function fmtTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts * 1000);
-  return d.toLocaleString('zh-CN', { dateStyle: 'short', timeStyle: 'short' });
-}
+          if (search.value) {
+            pages = pages.filter(p =>
+              p.title.toLowerCase().includes(search.value.toLowerCase())
+            );
+          }
 
-function render() {
-  const { pre_delete_pages, deleted_pages, errors, update_timestamp } = DATA;
+          pages.sort((a, b) =>
+            sortBy.value === 'score' ? a.score - b.score : a.time - b.time
+          );
 
-  // Update time
-  document.getElementById('updateTime').textContent =
-    '数据更新时间：' + fmtTime(update_timestamp);
+          return pages;
+        });
 
-  // Stats
-  document.getElementById('statPre').textContent = pre_delete_pages.length;
-  document.getElementById('statDeleted').textContent = deleted_pages.length;
-  document.getElementById('statErrors').textContent = errors.length;
+        const avgScore = computed(() => {
+          const pages = data.value.pre_delete_pages;
+          if (!pages.length) return '—';
+          const total = pages.reduce((sum, p) => sum + (p.score || 0), 0);
+          return (total / pages.length).toFixed(2);
+        });
 
-  if (pre_delete_pages.length) {
-    const avg = pre_delete_pages.reduce((s, p) => s + p.score, 0) / pre_delete_pages.length;
-    document.getElementById('statAvgScore').textContent = avg.toFixed(1);
-  } else {
-    document.getElementById('statAvgScore').textContent = '—';
-  }
+        function formatDuration(hours) {
+          if (hours <= 0) return '已到期';
+          const d = Math.floor(hours / 24);
+          const h = Math.floor(hours % 24);
+          const m = Math.round((hours - Math.floor(hours)) * 60);
+          return [
+            d ? d + '天' : '',
+            h ? h + '小时' : '',
+            m ? m + '分钟' : ''
+          ].filter(Boolean).join('') || '不足1分钟';
+        }
 
-  // Pre-delete table
-  const preBody = document.getElementById('preTableBody');
-  if (pre_delete_pages.length === 0) {
-    document.getElementById('preEmpty').style.display = 'block';
-  } else {
-    pre_delete_pages.forEach((p, i) => {
-      const tr = document.createElement('tr');
-      const scoreBadge = p.score < 0
-        ? `<span class="badge score-neg">${p.score}</span>`
-        : `<span class="badge score-zero">${p.score}</span>`;
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td>${p.title || '—'}</td>
-        <td><a class="link" href="${p.link}" target="_blank">${p.link}</a></td>
-        <td>${scoreBadge}</td>
-        <td>${p.release_score ?? '—'}</td>
-        <td>${p.time ?? '—'}</td>
-        <td>${p.discuss_link ? `<a class="link" href="${p.discuss_link}" target="_blank">讨论帖</a>` : '—'}</td>
-        <td>${fmtTime(p.timestamp)}</td>
-      `;
-      preBody.appendChild(tr);
-    });
-  }
+        function formatTime(ts) {
+          return ts ? new Date(ts * 1000).toLocaleString('zh-CN') : '—';
+        }
 
-  // Deleted table
-  const delBody = document.getElementById('delTableBody');
-  if (deleted_pages.length === 0) {
-    document.getElementById('delEmpty').style.display = 'block';
-  } else {
-    deleted_pages.forEach((p, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td>${p.title || '—'}</td>
-        <td><a class="link" href="${p.link}" target="_blank">${p.link}</a></td>
-        <td>${p.score ?? '—'}</td>
-        <td>${p.release_score ?? '—'}</td>
-        <td>${fmtTime(p.timestamp || p.deleted_at)}</td>
-      `;
-      delBody.appendChild(tr);
-    });
-  }
+        let timer = null;
+        onMounted(() => {
+          refreshData();
+          timer = setInterval(refreshData, 60000);
+        });
+        onUnmounted(() => clearInterval(timer));
 
-  // Errors
-  const errContainer = document.getElementById('errorsContainer');
-  if (errors.length === 0) {
-    document.getElementById('errEmpty').style.display = 'block';
-  } else {
-    errors.forEach(e => {
-      const div = document.createElement('div');
-      div.className = 'error-item';
-      div.textContent = typeof e === 'string' ? e : JSON.stringify(e);
-      errContainer.appendChild(div);
-    });
-  }
-
-  // Now
-  document.getElementById('nowTime').textContent =
-    '当前时间：' + new Date().toLocaleString('zh-CN');
-}
-
-render();
-</script>
+        return {
+          data, search, sortBy, activeTab, loading,
+          currentList, avgScore,
+          refreshData, formatDuration, formatTime
+        };
+      }
+    }).mount('#app');
+  </script>
 </body>
+
 </html>
