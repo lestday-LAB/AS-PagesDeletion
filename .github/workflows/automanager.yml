@@ -1,0 +1,48 @@
+name: Wikidot Pages Automanager
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'    
+  workflow_dispatch:
+
+jobs:
+  run-manager:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Prepare configuration
+        run: |
+          cp config.yaml.example config.yaml
+          sed -i 's/username: "DFCgirl"/username: "${{ secrets.WIKIDOT_USERNAME }}"/g' config.yaml
+          sed -i 's/password: ""/password: "${{ secrets.WIKIDOT_PASSWORD }}"/g' config.yaml
+          sed -i 's/siteUnixName: "deep-forest-club"/siteUnixName: "${{ secrets.WIKIDOT_SITE }}"/g' config.yaml
+
+      - name: Initialize PKL file
+        run: |
+          if [ ! -f "deleted_pages.pkl" ]; then
+            python create_pkl.py
+          fi
+
+      - name: Execute script
+        run: python bkr_delete.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add deleted_pages.pkl data.json logs/
+          git commit -m "Auto-update pages data" || echo "No changes to commit"
+          git push

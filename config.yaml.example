@@ -1,0 +1,12 @@
+# Wikidot机器人用户名
+username: "DFCgirl"
+# Wikidot机器人密码
+password: ""
+# 目标站点名称
+siteUnixName: "deep-forest-club"
+# 职员用户名列表
+staffs:
+  - "lestday233"
+# 其他站点id
+sites:
+  - ""
