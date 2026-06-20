@@ -368,7 +368,7 @@ def find_staff_post(posts: list[dict]) -> dict | None:
 def get_delete_hours(tags: list[str], score: int) -> int:
     if "新手专区" in tags:
         return 72 if score <= -6 else 0
-    if score <= -4:
+    if score <= -6:
         return 24
     elif score <= -2:
         return 72
