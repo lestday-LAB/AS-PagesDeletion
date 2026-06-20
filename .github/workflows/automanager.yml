@@ -32,9 +32,9 @@ jobs:
       - name: Prepare configuration
         run: |
           cp config.yaml.example config.yaml
-          sed -i 's/username: "DFCgirl"/username: "${{ secrets.WIKIDOT_USERNAME }}"/g' config.yaml
+          sed -i 's/username: "LightBot233"/username: "${{ secrets.WIKIDOT_USERNAME }}"/g' config.yaml
           sed -i 's/password: ""/password: "${{ secrets.WIKIDOT_PASSWORD }}"/g' config.yaml
-          sed -i 's/siteUnixName: "deep-forest-club"/siteUnixName: "${{ secrets.WIKIDOT_SITE }}"/g' config.yaml
+          sed -i 's/siteUnixName: "asbackroom"/siteUnixName: "${{ secrets.WIKIDOT_SITE }}"/g' config.yaml
 
       - name: Initialize PKL file
         run: |
