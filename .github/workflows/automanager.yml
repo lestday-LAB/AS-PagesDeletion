@@ -1,4 +1,4 @@
-name: 🗑 Wikidot Pages Automanager
+name: Wikidot pages autodelete
 
 on:
   schedule:
