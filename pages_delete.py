@@ -501,23 +501,27 @@ def check_pending_pages():
                 pending_pages.pop(page_id, None)
                 continue
 
-            # 冻结期仍然记录，但标记为 frozen
-            logger.info(
-                f"页面 {page.fullname} 处于冻结期（剩余 {int(remaining_seconds)}s）"
-            )
+            if score == -10:
+                logger.debug(f"页面 {page.fullname} 分数为 -10，加入生成删除宣告列表")
 
-            pending_delete_pages.append({
-                "link": page.get_url(),
-                "title": page.title,
-                "score": score,
-                "release_score": announced_score,
-                "time": round(remaining_seconds / 3600, 1),
-                "discuss_link": f"https://{config['siteUnixName']}.wikidot.com/forum/t-{discuss_id}",
-                "post_id": deletion_post["id"],
-                "timestamp": record_timestamp,
-                "status": "frozen",
-            })
-            continue
+            else:
+                pending_delete_pages.append({
+                    "link": page.get_url(),
+                    "title": page.title,
+                    "score": score,
+                    "release_score": announced_score,
+                    "time": round(remaining_seconds / 3600, 1),
+                    "discuss_link": f"https://{config['siteUnixName']}.wikidot.com/forum/t-{discuss_id}",
+                    "post_id": deletion_post["id"],
+                    "timestamp": record_timestamp,
+                    "status": "frozen",
+                })
+
+                logger.info(
+                    f"页面 {page.fullname} 处于冻结期（剩余 {int(remaining_seconds)}s）"
+                )
+
+                continue
 
         # ---------- 正常分数回升 ----------
         cancel_threshold = get_cancel_threshold(tags)
@@ -555,11 +559,20 @@ def check_pending_pages():
             )
 
         # ---------- 到期 ----------
+        if page.rating <= -10:
+            logger.debug(f"页面 {page.fullname} 分数为 -10，加入生成删除宣告列表")
+            pending_check_pages.append(
+                [page.fullname, pending_pages[page.id][0], "minusTen"]
+            )
+            
+            continue
+
         if current_time >= record_timestamp:
             logger.info(f"页面 {page.fullname} 倒计时到期，加入删除宣告列表")
             pending_check_pages.append(
                 [page.fullname, announced_score, "normal"]
             )
+
         else:
             pending_delete_pages.append({
                 "link": page.get_url(),
@@ -572,12 +585,6 @@ def check_pending_pages():
                 "timestamp": record_timestamp,
                 "status": "normal",
             })
-
-        if page.rating <= -10:
-            logger.info('文章已处于-10分以下，加入生成删除宣告列表')
-            pending_check_pages.append(
-                [page.fullname, pending_pages[page.id][0], "minusTen"]
-            )
 
 
 @Retry(ifRaise=True)
