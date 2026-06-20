@@ -573,6 +573,12 @@ def check_pending_pages():
                 "status": "normal",
             })
 
+        if page.rating <= -10:
+            logger.info('文章已处于-10分以下，加入生成删除宣告列表')
+            pending_check_pages.append(
+                [page.fullname, pending_pages[page.id][0], "minusThirty"]
+            )
+
 
 @Retry(ifRaise=True)
 def check_deleted_pages():
