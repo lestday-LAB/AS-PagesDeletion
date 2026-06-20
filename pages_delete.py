@@ -382,7 +382,7 @@ def get_delete_hours(tags: list[str], score: int) -> int:
 def check_original_pages():
     pages = site.pages.search(
         category="-archived -setting -space -system -topic",
-        tags="-已归档 -管理 -作者 -待删除 -重写中 -_低分删除豁免 原创 搬运 文章 设定框架 _test -组件后端 -组件 -版式",
+        tags="-已归档 -管理 -中心 -功能 -作者 -待删除 -重写中 -_低分删除豁免 原创 搬运 文章 _test -组件后端 -组件 -版式",
         rating="<=0",
     )
 
