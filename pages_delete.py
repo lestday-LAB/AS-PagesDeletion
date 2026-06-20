@@ -1,6 +1,6 @@
 import os
 import asyncio
-from datetime import datetime, UTC
+from datetime import datetime
 import json
 import logging
 import pickle
@@ -275,7 +275,7 @@ def edit_tags(page_id: int, tags: str):
 # ======================
 
 def build_delete_announce(score: int, timer: float) -> str:
-    iso_time = datetime.fromtimestamp(timer, UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    iso_time = datetime.utcfromtimestamp(timer).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     timestamp_ms = int(timer * 1000)
     return f"""由于条目的分数为 {score} 分，现根据[[[deletions-policy|删除政策]]]，宣告将删除此页：
 
