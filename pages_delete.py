@@ -367,11 +367,11 @@ def find_staff_post(posts: list[dict]) -> dict | None:
 
 def get_delete_hours(tags: list[str], score: int) -> int:
     if "新手专区" in tags:
-        return 48 if score <= -6 else 0
+        return 72 if score <= -6 else 0
     if score <= -4:
         return 24
     elif score <= -2:
-        return 48
+        return 72
     return 0
 
 # ======================
@@ -381,7 +381,7 @@ def get_delete_hours(tags: list[str], score: int) -> int:
 @Retry(ifRaise=True)
 def check_original_pages():
     pages = site.pages.search(
-        category="-archived -setting -space -system -topic",
+        category="-archived -old -system -reserve",
         tags="-已归档 -管理 -中心 -功能 -作者 -待删除 -重写中 -_低分删除豁免 原创 搬运 文章 _test -组件后端 -组件 -版式",
         rating="<=0",
     )
@@ -451,7 +451,7 @@ def check_pending_pages():
     def bucket(tags: list[str], score: int) -> int:
         if "新手专区" in tags:
             return 48 if score <= -6 else 0
-        if score <= -4:
+        if score <= -6:
             return 24
         elif score <= -2:
             return 48
@@ -626,7 +626,7 @@ def generate_announce():
                     "link": link,
                     "title": page.title,
                     "score": page.rating,
-                    "time": 24 if rel_score <= -10 else 72,
+                    "time": 24 if rel_score <= -6 else 72,
                     "context": page.source.wiki_text,
                     "page_type": [ptype],
                     "release_score": rel_score,
