@@ -135,7 +135,7 @@
           <option value="time">按宽限时长排序</option>
         </select>
         <button @click="refreshData" :disabled="loading"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg flex items-center gap-2">
+          class="px-4 py-2 w- bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg flex items-center gap-2">
           <svg class="w-4 h-4" :class="{ spin: loading }" fill="none" stroke="currentColor" stroke-width="2"
             viewBox="0 0 24 24">
             <path d="M1 4v6h6M23 20v-6h-6" />
@@ -161,24 +161,25 @@
             直接删除（{{ data.deleted_pages?.length || 0 }}）
           </button>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="min-w-[600px] w-full text-sm">
+          <table class="min-w-[640px] w-full text-sm">
             <thead class="bg-slate-700/50 text-slate-400 uppercase">
               <tr>
                 <th class="px-6 py-3 text-left">标题</th>
                 <th class="px-6 py-3 text-left">评分</th>
-                <th v-if="activeTab !== 'expired'" class="px-6 py-3 text-left">宽限时长</th>
-                <th v-if="activeTab === 'expired'" class="px-6 py-3 text-left">操作</th>
+                <th v-if="activeTab === 'pre'" class="px-6 py-3 text-left">宽限时长</th>
+                <th class="px-6 py-3 text-left w-[140px]"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
               <tr v-if="currentList.length === 0 && !search">
-                <td :colspan="activeTab !== 'expired' ? 3 : 3" class="px-6 py-10 text-center text-slate-500">
+                <td colspan="4" class="px-6 py-10 text-center text-slate-500">
                   📭 没有符合条件的页面
                 </td>
               </tr>
               <tr v-else-if="currentList.length === 0 && search">
-                <td :colspan="activeTab !== 'expired' ? 3 : 3" class="px-6 py-10 text-center text-slate-500">
+                <td colspan="4" class="px-6 py-10 text-center text-slate-500">
                   🔍 未找到匹配的页面
                 </td>
               </tr>
@@ -195,13 +196,13 @@
                     {{ page.score }}
                   </span>
                 </td>
-                <td v-if="activeTab !== 'expired'" class="px-6 py-4 text-slate-300"
+                <td v-if="activeTab === 'pre'" class="px-6 py-4 text-slate-300"
                   :class="page.time < 12 ? 'text-red-400 font-semibold' : ''">
                   {{ formatDuration(page.time) }}
                 </td>
-                <td v-if="activeTab === 'expired'" class="px-6 py-4">
+                <td class="px-6 py-4">
                   <button @click="showSource(page)"
-                    class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-blue-400 rounded-lg border border-slate-600 transition flex items-center gap-1.5">
+                    class="px-3 py-1.5 w-max bg-slate-700 hover:bg-slate-600 text-xs text-blue-400 rounded-lg border border-slate-600 transition flex items-center gap-1.5">
                     <i class="fa-solid fa-code"></i>
                     查看源码
                   </button>
@@ -214,7 +215,9 @@
 
       <!-- Errors panel -->
       <details v-if="data.errors.length" class="bg-slate-800 border border-slate-700 rounded-2xl p-4">
-        <summary class="cursor-pointer text-yellow-400 font-medium">查看错误（{{ data.errors.length }}）</summary>
+        <summary class="cursor-pointer text-yellow-400 font-medium">
+          查看错误（{{ data.errors.length }}）
+        </summary>
         <ul class="mt-3 space-y-1 text-sm text-slate-400">
           <li v-for="(e, i) in data.errors" :key="i" class="flex items-start gap-2">
             <span class="text-red-400 mt-0.5">•</span>
@@ -232,7 +235,6 @@
         <div
           class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl"
           @click.stop>
-          <!-- 弹窗头部 -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
             <div class="flex items-center gap-2 min-w-0">
               <i class="fa-solid fa-code text-blue-400 shrink-0"></i>
@@ -244,14 +246,12 @@
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <!-- 弹窗内容 -->
           <div class="flex-1 overflow-auto p-6">
             <pre v-if="modal.error" class="text-red-400 text-sm">{{ modal.error }}</pre>
             <pre v-else class="source-code text-slate-200 bg-slate-900 rounded-lg p-4 overflow-auto">
 {{ modal.content }}
             </pre>
           </div>
-          <!-- 弹窗底部 -->
           <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
             <button @click="copySource" v-if="!modal.error"
               class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-sm text-white rounded-lg border border-slate-600 transition flex items-center gap-2">
@@ -271,7 +271,6 @@
         </div>
       </div>
     </teleport>
-    <!-- ========== 弹窗结束 ========== -->
 
   </div>
 
@@ -292,7 +291,6 @@
         const activeTab = ref('pre');
         const loading = ref(false);
 
-        // ✅ 修复：增加 pageLink 字段
         const modal = ref({
           visible: false,
           error: '',
@@ -320,13 +318,13 @@
             const res = await fetchWithTimeout(PRIMARY_URL);
             if (!res.ok) throw new Error('Primary source returned ' + res.status);
             var json = await res.json();
-          } catch (primaryErr) {
+          } catch {
             source = 'fallback';
             try {
               const res2 = await fetchWithTimeout(FALLBACK_URL);
               if (!res2.ok) throw new Error('Fallback source returned ' + res2.status);
               json = await res2.json();
-            } catch (fallbackErr) {
+            } catch {
               data.value.errors = ['数据加载失败：主源与备用源均无法访问'];
               loading.value = false;
               return;
@@ -347,7 +345,6 @@
           loading.value = false;
         }
 
-        // ✅ 修复：正确赋值 pageLink
         function showSource(page) {
           const ctx = page.context || '';
           modal.value = {
@@ -364,7 +361,6 @@
           modal.value.visible = false;
         }
 
-        // ✅ 修复：点击遮罩关闭（不依赖 .self）
         function onMaskClick(e) {
           if (e.target === e.currentTarget) {
             closeModal();
