@@ -379,8 +379,8 @@ def check_original_pages():
 
         # 清除 pending_pages 中该页面的旧数据
         if page.id in pending_pages:
-            logger.info(f"清除 {page.fullname} 的旧 pending 数据")
-            del pending_pages[page.id]
+            logger.info(f"页面 {page.fullname} 有旧 pending 数据")
+            continue
 
         discuss_id = get_discuss_id(page.id)
         deletion_post = find_staff_post(get_posts(discuss_id))
