@@ -443,7 +443,8 @@ def check_pending_pages():
         deletion_post = find_staff_post(get_posts(discuss_id))
 
         if deletion_post is None:
-            edit_tags(page_id, page.tags.replace("待删除", ""))
+            new_tags = [t for t in page.tags if t != "待删除"]
+            edit_tags(page_id, " ".join(new_tags))
             pending_pages.pop(page_id, None)
             continue
 
