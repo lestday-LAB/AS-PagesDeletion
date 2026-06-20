@@ -223,12 +223,41 @@ def new_post(thread_id: int, title: str = "", source: str = "", parent_id: int =
 
 
 @Retry(last_text="放弃重试，跳过修改")
-def edit_tags(page_id: int, tags: str):
+def safe_edit_tags(page_id: int, action: str, tag_name: str = "待删除"):
+    """
+    安全修改标签：
+    action = "add" | "remove"
+    """
+
+    if action not in ("add", "remove"):
+        raise ValueError("action must be 'add' or 'remove'")
+
+    try:
+        page = site.page.get(page_id)
+    except Exception as e:
+        logger.error(f"[{page_id}] 获取页面失败：{e}")
+        raise
+
+    current_tags = list(page.tags)
+
+    if action == "remove" and tag_name not in current_tags:
+        logger.debug(f"[{page_id}] 标签 '{tag_name}' 不存在，无需移除")
+        return
+
+    if action == "add" and tag_name in current_tags:
+        logger.debug(f"[{page_id}] 标签 '{tag_name}' 已存在，无需添加")
+        return
+
+    if action == "remove":
+        new_tags = [t for t in current_tags if t != tag_name]
+    else:
+        new_tags = current_tags + [tag_name]
+
     response = site.amc_request(
         [
             {
-                "tags": tags,
                 "pageId": page_id,
+                "tags": " ".join(new_tags),
                 "action": "WikiPageAction",
                 "event": "saveTags",
                 "moduleName": "Empty",
@@ -236,24 +265,21 @@ def edit_tags(page_id: int, tags: str):
         ]
     )[0]
 
-    error_dict = {
-        "pageId": page_id,
-        "tags": tags,
-        "errorType": "edit_tags_unknown",
-    }
-
     status = response.json()["status"]
-    if status == "no_permission":
-        error_dict["errorType"] = "edit_tags_permission"
-        deviant.append(error_dict)
-        logger.warning("缺少编辑权限，跳过修改")
-    elif status == "ok":
-        if error_dict in deviant:
-            deviant.remove(error_dict)
+
+    if status == "ok":
+        logger.info(f"[{page_id}] 成功{action}标签 '{tag_name}'")
+    elif status == "no_permission":
+        logger.warning(f"[{page_id}] 无权限修改标签")
+        deviant.append(
+            {
+                "pageId": page_id,
+                "tags": new_tags,
+                "errorType": "edit_tags_permission",
+            }
+        )
     else:
-        logger.warning(f"编辑失败，状态为{status}，准备重试")
-        if error_dict not in deviant:
-            deviant.append(error_dict)
+        logger.warning(f"[{page_id}] 修改标签失败，状态={status}")
         raise exceptions.WikidotStatusCodeException(status_code=status)
 
 
