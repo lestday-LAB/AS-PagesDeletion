@@ -586,7 +586,7 @@ def check_pending_pages():
             )
 
         # -10 分直接加入删除宣告
-        if score <= -30:
+        if score <= -10:
             logger.info(
                 f"{page_desc(page)} 已低于 -10 分，直接加入删除宣告列表"
             )
