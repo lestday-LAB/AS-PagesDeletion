@@ -121,6 +121,7 @@ async def single_request(site: Site, _body: dict[str, Any]):
 @Retry(last_text="放弃重试，跳过修改")
 def edit_post(thread_id: int, post_id: int, title: str | None = None, source: str | None = None):
     if title is None and source is None:
+        logger.info("标题与源代码为空，放弃修改")
         return
 
     response = asyncio.run(
@@ -129,8 +130,8 @@ def edit_post(thread_id: int, post_id: int, title: str | None = None, source: st
             {
                 "postId": post_id,
                 "threadId": thread_id,
-                "moduleName": "forum/sub/ForumEditPostFormModule",
-            },
+                "moduleName": "forum/sub/ForumEditPostFormModule"
+            }
         )
     )
 
@@ -141,7 +142,6 @@ def edit_post(thread_id: int, post_id: int, title: str | None = None, source: st
         "source": source,
         "errorType": "edit_post_unknown",
     }
-
     status = response.json()["status"]
     if status == "no_permission":
         error_dict["errorType"] = "edit_post_permission"
@@ -158,12 +158,18 @@ def edit_post(thread_id: int, post_id: int, title: str | None = None, source: st
         raise exceptions.WikidotStatusCodeException(status_code=status)
 
     html = BeautifulSoup(response.json()["body"], "lxml")
-    current_id = int(html.select("form#edit-post-form>input")[1].get("value"))
+    current_id = int(html.select(
+        "form#edit-post-form>input")[1].get("value"))
+    current_title = html.select_one("input#np-title").get("value")
+    current_source = html.select_one("textarea#np-text").get_text()
 
+    if current_title == title and current_source == source:
+        logger.info("标题与源代码和原帖相同，放弃修改")
+        return
     if title is None:
-        title = html.select_one("input#np-title").get("value")
+        title = current_title
     if source is None:
-        source = html.select_one("textarea#np-text").get_text()
+        source = current_source
 
     response = site.amc_request(
         [
@@ -174,7 +180,7 @@ def edit_post(thread_id: int, post_id: int, title: str | None = None, source: st
                 "source": source,
                 "action": "ForumAction",
                 "event": "saveEditPost",
-                "moduleName": "Empty",
+                "moduleName": "Empty"
             }
         ]
     )[0]
@@ -183,6 +189,7 @@ def edit_post(thread_id: int, post_id: int, title: str | None = None, source: st
 @Retry(last_text="放弃重试，跳过创建")
 def new_post(thread_id: int, title: str = "", source: str = "", parent_id: int = ""):
     if source == "":
+        logger.info("源代码为空，放弃创建")
         return
 
     response = asyncio.run(
@@ -195,8 +202,8 @@ def new_post(thread_id: int, title: str = "", source: str = "", parent_id: int =
                 "source": source,
                 "action": "ForumAction",
                 "event": "savePost",
-                "moduleName": "Empty",
-            },
+                "moduleName": "Empty"
+            }
         )
     )
 
@@ -206,7 +213,6 @@ def new_post(thread_id: int, title: str = "", source: str = "", parent_id: int =
         "source": source,
         "errorType": "new_post_unknown",
     }
-
     status = response.json()["status"]
     if status == "no_permission":
         error_dict["errorType"] = "new_post_permission"
@@ -254,7 +260,6 @@ def edit_tags(page_id: int, tags: str):
             deviant.append(error_dict)
         raise exceptions.WikidotStatusCodeException(status_code=status)
 
-
 # ======================
 # 删除宣告
 # ======================
@@ -273,20 +278,21 @@ def build_delete_announce(score: int, timer: float, newbie: bool = False) -> str
 # ======================
 # 论坛相关
 # ======================
-
 def get_posts(thread_id: int) -> list[dict]:
     response = site.amc_request(
         [
             {
                 "t": thread_id,
-                "moduleName": "forum/ForumViewThreadModule",
+                "moduleName": "forum/ForumViewThreadModule"
             }
         ]
     )[0]
-
+    
     html = BeautifulSoup(response.json()["body"], "lxml")
-    pagerno = html.select_one("span.pager-no")
-    pagers = int(re.search(r"of (\d+)", pagerno.text).group(1)) if pagerno else 1
+    if (pagerno := html.select_one("span.pager-no")) is None:
+        pagers = 1
+    else:
+        pagers = int(re.search(r"of (\d+)", pagerno.text).group(1))
 
     responses = site.amc_request(
         [
@@ -297,34 +303,30 @@ def get_posts(thread_id: int) -> list[dict]:
                 "moduleName": "forum/ForumViewThreadPostsModule",
             }
             for no in range(pagers)
-        ]
-    )
+            ]
+        )
 
     posts = []
+
     for response in responses:
         html = BeautifulSoup(response.json()["body"], "lxml")
         for post in html.select("div.post"):
             cuser = post.select_one("div.info span.printuser")
             codate = post.select_one("div.info span.odate")
-            parent = post.parent.get("id")
+            if (parent := post.parent.get("id")) != "thread-container-posts":
+                parent_id = int(re.search(r"fpc-(\d+)", parent).group(1))
+            else:
+                parent_id = ""
 
-            parent_id = (
-                int(re.search(r"fpc-(\d+)", parent).group(1))
-                if parent != "thread-container-posts"
-                else ""
-            )
-
-            posts.append(
-                {
-                    "id": int(re.search(r"post-(\d+)", post.get("id")).group(1)),
-                    "thread_id": thread_id,
-                    "title": post.select_one("div.title").text.strip(),
-                    "parent_id": parent_id,
-                    "created_by": user_parser(wd, cuser),
-                    "created_at": odate_parser(codate),
-                    "source_ele": post.select_one("div.content"),
-                }
-            )
+            posts.append({
+                "id" : int(re.search(r"post-(\d+)", post.get("id")).group(1)),
+                "thread_id" : thread_id,
+                "title" : post.select_one("div.title").text.strip(),
+                "parent_id" : parent_id,
+                "created_by" : user_parser(wd, cuser),
+                "created_at" : odate_parser(codate),
+                "source_ele" : post.select_one("div.content")
+            })
 
     return posts
 
@@ -337,20 +339,19 @@ def get_discuss_id(page_id: int) -> int:
                 "page_id": page_id,
                 "action": "ForumAction",
                 "event": "createPageDiscussionThread",
-                "moduleName": "Empty",
+                "moduleName": "Empty"
             }
         ]
     )[0]
+
     return int(response.json()["thread_id"])
 
 
 def find_staff_post(posts: list[dict]) -> dict:
     for post in posts:
-        if (
-            "职员帖" in post["title"]
-            and "删除宣告" in post["title"]
-            and post["created_by"].name in staff_unix_names
-        ):
+        title = post["title"]
+        user = post["created_by"].name
+        if "职员帖" in title and "删除宣告" in title and user in staff_unix_names:
             return post
 
 
