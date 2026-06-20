@@ -585,10 +585,10 @@ def check_pending_pages():
                 }
             )
 
-        # ✅ -30 分直接加入删除宣告
+        # -10 分直接加入删除宣告
         if score <= -30:
             logger.info(
-                f"{page_desc(page)} 已低于 -30 分，直接加入删除宣告列表"
+                f"{page_desc(page)} 已低于 -10 分，直接加入删除宣告列表"
             )
             pending_check_pages.append(
                 [page.fullname, announced, "minusThirty"]
