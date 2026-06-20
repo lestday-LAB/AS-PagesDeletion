@@ -591,7 +591,7 @@ def check_pending_pages():
                 f"{page_desc(page)} 已低于 -10 分，直接加入删除宣告列表"
             )
             pending_check_pages.append(
-                [page.fullname, announced, "minusThirty"]
+                [page.fullname, announced, "minusTen"]
             )
 
 
