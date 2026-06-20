@@ -93,16 +93,16 @@
             <span class="text-xl text-yellow-400"><i class="fa-solid fa-hourglass"></i></span>
           </div>
           <div>
-            <p class="text-sm text-slate-400">待删除</p>
+            <p class="text-sm text-slate-400">计时删除</p>
             <p class="text-2xl font-bold text-yellow-400">{{ data.pre_delete_pages.length }}</p>
           </div>
         </div>
         <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex items-center gap-4">
           <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-            <span class="text-xl text-red-400"><i class="fa-regular fa-clock"></i></span>
+            <span class="text-xl text-red-400"><i class="fa-solid fa-trash"></i></span>
           </div>
           <div>
-            <p class="text-sm text-slate-400">可删除</p>
+            <p class="text-sm text-slate-400">直接删除</p>
             <p class="text-2xl font-bold text-red-400">{{ data.deleted_pages?.length || 0 }}</p>
           </div>
         </div>
@@ -152,13 +152,13 @@
             :class="activeTab === 'pre' ? 'border-b-2 border-yellow-400 text-yellow-400' : 'text-slate-400 hover:text-white'"
             class="px-6 py-3 text-sm font-medium transition">
             <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2 align-middle"></span>
-            待删除（{{ data.pre_delete_pages.length }}）
+            计时删除（{{ data.pre_delete_pages.length }}）
           </button>
           <button @click="activeTab = 'expired'"
             :class="activeTab === 'expired' ? 'border-b-2 border-red-400 text-red-400' : 'text-slate-400 hover:text-white'"
             class="px-6 py-3 text-sm font-medium transition">
             <span class="inline-block w-2 h-2 rounded-full bg-red-400 mr-2 align-middle"></span>
-            可删除（{{ data.deleted_pages?.length || 0 }}）
+            直接删除（{{ data.deleted_pages?.length || 0 }}）
           </button>
         </div>
         <div class="overflow-x-auto">
