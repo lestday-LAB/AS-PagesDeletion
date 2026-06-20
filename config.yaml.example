@@ -1,13 +1,13 @@
 # Wikidot机器人用户名
-username: "DFCgirl"
+username: "LightBot233"
 # Wikidot机器人密码
 password: ""
 # 目标站点名称
-siteUnixName: "deep-forest-club"
+siteUnixName: "asbackroom"
 # 职员用户名列表
 staffs:
   - "lestday233"
-  - "DFCgirl"
+  - "LightBot"
 # 其他站点id
 sites:
   - ""
