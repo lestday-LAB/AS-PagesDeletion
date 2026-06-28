@@ -363,7 +363,7 @@ def check_original_pages():
     """检查文章页面，根据评分发布删除宣告"""
     pages = site.pages.search(
         category="-archived -setting -space -system -topic",
-        tags="-已归档 -旧页面 -管理 -作者 -待删除 -重写中 -_低分删除豁免 原创 搬运 _test -功能 -中心 -组件后端 -组件 -版式",
+        tags="-已归档 -旧页面 -管理 -作者 -待删除 -重写中 -_低分删除豁免 -_删除豁免 原创 搬运 _test -功能 -中心 -组件后端 -组件 -版式 -2026幻想竞赛",
         rating="<=0"
     )
 
