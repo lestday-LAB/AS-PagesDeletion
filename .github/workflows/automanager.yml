@@ -7,9 +7,12 @@ on:
     types: [trigger-notifier]
   workflow_dispatch:
 
-
 env:
     TZ: Asia/Shanghai
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run-manager:
@@ -66,4 +69,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add deleted_pages.pkl data.json logs/
           git commit -m "Auto-update pages data" || echo "No changes to commit"
+          git pull --rebase origin master
           git push
