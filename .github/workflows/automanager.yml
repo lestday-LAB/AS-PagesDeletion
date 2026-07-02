@@ -1,8 +1,6 @@
 name: Wikidot pages autodelete
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'
   repository_dispatch:
     types: [trigger-notifier]
   workflow_dispatch:
