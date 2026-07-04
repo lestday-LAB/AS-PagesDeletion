@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-    TZ: Asia/Shanghai
+  TZ: Asia/Shanghai
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -51,6 +51,9 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
+          git worktree prune
+          rm -rf gh-pages
+
           git fetch origin gh-pages
           git worktree add gh-pages gh-pages
 
@@ -58,14 +61,23 @@ jobs:
 
           cd gh-pages
           git add data.json
-          git commit -m "Update data.json from automanager" || echo "No changes"
+          git diff --cached --quiet || git commit -m "Update data.json from automanager"
           git push origin gh-pages
 
-      - name: Commit and push changes
+          cd ..
+          git worktree remove gh-pages
+
+      - name: Commit and push changes to master
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+
           git add deleted_pages.pkl data.json logs/
-          git commit -m "Auto-update pages data" || echo "No changes to commit"
-          git pull --rebase origin master
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update pages data"
+            git pull --rebase origin master
+            git push origin master
+          fi
