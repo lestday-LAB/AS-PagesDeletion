@@ -237,7 +237,7 @@ def edit_tags(page_id: int, tags: str):
 def build_delete_announce(score: int, timer: float) -> str:
     """构建删除宣告内容"""
     timestamp_ms = int(timer * 1000)
-    return f"""此文章目前为 {score} 分，现依据[[[deletions-guide|删除指导]]]宣告将删除此页面：
+    return f"""此文章目前为 {score} 分，现依据[[[deletions-policy|删除指导]]]宣告将删除此页面：
 
 [[iframe https://arandintday.github.io/thebackhubscn/Deletion%20Time%20Tool/Deletion%20Time%20Tool.html?timestamp={timestamp_ms}&type=0 style="width: 400px; height: 60px;"]]
 
